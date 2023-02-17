@@ -370,6 +370,212 @@ toc()
 # purrr: map() and map2() similar but interact better w/ Tidyverse
 # furrr: pllzd tidy-friendly vectorization, combine purrr and future
 
-# LECTURE 3: PRODUCTIVITY TOOLS
+# LECTURE 3 PRODUCTIVITY TOOLS
 # Yoooooooo we're gonna learn VERSION CONTROL
 #testing a change!
+
+# LECTURE 4: DATA WRANGLING IN THE TIDYVERSE!
+# going to wrangle, clean data, and do some webscraping
+# there appear to have been homeworks maybe I should try them
+
+# Tidyverse basics
+# intuitive, similar to Stata, front end for big data/ML tools
+# need to use a combo of base R and tidyverse to do stuff
+# data.table is also popular, not in this tutorial
+# tidyverse::snake_case vs base::period.case
+# REMEMBER: tidyverse is consistent and easy to visualize
+  # Each column is a variable
+  # Each row is an observation
+# Wide vs long: Tidy is in LONG, many R packages assume in LONG (like Stata tbh)
+install.packages('tidyverse')  # installs a handful at once 
+install.packages('nycflights13')
+library(tidyverse)
+tidyverse_packages()
+# lubridate for dates, rvest for webscraping
+# we will focus on dplyr and tidyr
+
+# laying pipe ;) 
+# New: |> or Old: %>%, take the output of ine function and feed it into 
+# the first argument of the next (which you then skip)
+# dataframe |> filter(condition) equivalent to filter(dataframe, condition)
+# %>% is from magrittr, works identically to |>
+# shortcut: ctrl+shift+M, need to make a setting to make |> default
+# pipes make it easier to read/write
+# These lines of code do the same thing, first reads Left to Right
+mpg |> filter(manufacturer == "audi") |> group_by(model) |> summarize(hwy_mean = mean(hwy))
+summarize(group_by(filter(mpg, manufacturer == "audi"), model), hwy_mean = mean(hwy))
+# now make it a PIPELINE BEYBEE
+mpg |>
+  filter(manufacturer == "audi") |>
+  group_by(model) |>
+  summarize(hwy_mean = mean(hwy))
+
+# dplyr: filter, arrange, select, mutate, summarize
+# filter: subset rows based on values
+starwars |> 
+  filter(
+    species == "Human",
+    height >= 190
+  )
+starwars |>
+  filter(grepl("Skywalker", name))
+# filtering by removing missings
+starwars |>
+  filter(is.na(height))
+# to remove missings use this:
+starwars |>
+  filter(!is.na(height))
+
+# arrange: reorder rows based on values
+starwars |>
+  arrange(birth_year)
+# descending order
+starwars |>
+  arrange(desc(birth_year))
+# select: subset columns by their names
+starwars |>
+  select(name:skin_color, species, -height)
+# can rename 
+starwars |>
+  select(alias=name, crib=homeworld)
+starwars |>
+  rename(crib = homeworld)
+# celect(contains(PATTERN)), nice shortcut
+starwars |>
+  select(name, contains('color'))
+# mutate: create new columns==new variables
+starwars |>
+  select(name, birth_year) |>
+  mutate(dog_years = birth_year * 7) |>
+  mutate(comment = paste0(name, 'is', dog_years, 'in dog years.'))
+# mutate is order aware, can chain multiple
+starwars |>
+  select(name, birth_year) |>
+  mutate(
+    dog_years = birth_year * 7, #separate w/ comma
+    comment = paste0(name, "is", dog_years, "in dog years.")
+  )
+# boolean, logical, conditional operators all work w/ mutate too
+starwars |>
+  select(name, height) |>
+  filter(name %in% c('Luke Skywalker', 'Anakin Skywalker')) |>
+  mutate(tall1 = height > 180) |>
+  mutate(tall2 = ifelse(height > 180, 'Tall', 'Short'))
+# combine mutate and across to perform the same operation on a subset of variables
+starwars |>
+  select(name:eye_color) |>
+  mutate(across(where(is.character), toupper))
+# summariz(s)e: collapse multiple rows into single summ value
+# useful with the group_by command
+starwars |>
+  group_by(species) |>
+  summarize(mean_height = mean(height))
+# to ignore missing values, use na.rm = T
+starwars |>
+  group_by(species) |>
+  summarize(mean_height = mean(height, na.rm = T))
+# can use same across-based workflow as mutate
+starwars |>
+  group_by(species) |>
+  summarize(across(where(is.numeric), mean, na.rm = T))
+
+# other dplyr goodies
+# ungroup, for ungrouping after using group_by
+# use after grouped summarize or mutate operation or everything will be SLOW
+# slice: subset rows by position rather than filtering by values
+starwars |> slice(1:10)
+# pull: extract a column from data frame as a vector or scalar
+starwars |> filter(sex == "female") |> pull(height)
+# count and distinct: number and isolate unique obsv
+starwars |> count(species)
+starwars |> distinct(species)
+starwars |> group_by(species) |> summarize(num = n())
+
+# CHALLENGE! 
+starwars |> 
+  filter(sex =='female') |> 
+  count(eye_color) |>
+  arrange(desc(n)) # this last line I needed help with
+
+# Storing results in memory
+women = starwars |> filter(sex == 'female')
+brown_eyed_women = women |> filter(eye_color == 'brown')
+# DO NOT DO "CLOBBERING
+# STARWARS = STARWARS |> FILTER(SEX == 'FEMALE)
+
+# JOINS
+#most data analysis requires combining info from multiple table, 
+# to do this we use joins (similar to base::merge())
+#TYPES
+  #inner join: returns datafram of all rows that appear in both x and y
+  # left join: keeps all rows in x. For matched rows merges in values of y, for unmatched fills in NA from y
+  # right join: keeps all rows in y, same as left just reversef
+  # full join: keeps all rows in x and y
+# left is safer than inner (can lose observations)
+# use left unless you have a good reason
+library(nycflights13)
+data(flights)  
+data(planes)
+# do a LEft JoiN Yay
+flights |>
+  left_join(planes)
+# but there's trouble in paradise! Year does not have a consistent meaning across our databases!
+# one refers to year of flight and the other refers to year of construction
+# can fix this problem using ?dplyr::join
+flights |>
+  left_join(
+    planes |> rename(year_built = year),
+    by = "tailnum"
+  )
+# tidyr: pivot_longer, pivot_wider, separate, unite
+# pivot_longer: pivot wide to long
+stocks = data.frame(
+  time = as.Date('2009-01-01') + 0:1,
+  X = rnorm(2, 10, 1),
+  Y = rnorm(2, 10, 2),
+  Z = rnorm(2, 10, 5)
+)
+stocks
+
+tidy_stocks = stocks |>
+  pivot_longer(cols=X:Z, names_to = "stock", values_to ="price")
+tidy_stocks
+
+# pivot_wider: pivot long to wide
+tidy_stocks |> pivot_wider(names_from = stock, values_from = price)
+# can transpose it
+tidy_stocks |> pivot_wider(names_from = time, values_from = price)
+
+# separate: split one column into multiple
+economists = data.frame(name = c("Adam_Smith", "Paul_Samuelson", "Milton_Friedman"))
+economists
+
+economists |> separate(name, c("first_name", "last_name"))
+# can also define what is used to separate 
+economists |> separate(name, c("first_name", "last_name"), sep = "_")
+
+# related: separate_rows for splitting up cells that contain multiple fields or obsv
+jobs = data.frame(
+  name = c("Jack", "Jill"),
+  occupation = c("Homemaker", "Philosopher, Philanthropist, Troublemaker")
+)
+jobs
+jobs |> separate_rows(occupation)
+
+# unite: combine multiple columns into one
+gdp = data.frame(
+  yr = rep(2016, times = 4),
+  mnth = rep(1, times = 4),
+  dy = 1:4,
+  gdp = rnorm(4, mean = 100, sd = 2)
+)
+gdp
+gdp |> unite(date, c("yr", "mnth", "dy"), sep = "-")
+# unite will create a character variable. Easier to see if convert to tibble
+gdp_u = gdp |> unite(date, c("yr", "mnth", "dy"), sep = "-") |> as_tibble()
+gdp_u
+
+library(lubridate)
+gdp_u |> mutate(date = ymd(date))
+
+# STOPPING FOR NOW 
