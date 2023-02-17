@@ -271,3 +271,105 @@ for(i in 1:length(murder_numbers)) {
 }
 names(murder_means) = numeric_cols
 murder_means
+# For-loops are discouraged in R, but are important to know
+# ^ bc R has vectorization, but we have to cover functions first
+# I want to standardize (calc z-score) of numeric variable
+z_population = (murders$population - mean(murders$population)) / sd(murders$population)
+# This works, but is hard to follow
+# if wanted to standardize another vector would have to rewrite
+# Write a function!
+# calculate_z is the name
+# x is an argument (user supplies x each time, placeholder for calculations)
+# the stuff the function does is in {}
+# return() defines the result of the function, objects defined like z exist onl within the function
+calculate_z = function(x) { 
+  z = (x - mean(x)) / sd(x)
+  return(z)
+}
+# now use the function!
+z_population = calculate_z(murders$population)
+head(z_population)
+# Now I can use this funtion in different contexts!
+z_population = calculate_z(murders$population)
+z_rate = calculate_z(murders2$rate)
+z_seq = calculate_z(seq(1:100))
+# when to prefer function over a for loop
+# CHALLENGE
+average = function(x) {
+  z = (sum(x)) / length(x)
+  return(z)
+}
+average(murders$population)
+average_new = function(x, median) {
+  if(median == FALSE){
+    print(mean(x))
+  } else {
+    print(median(x))
+  } 
+}
+average_new(c(1, 9, 10), FALSE)
+average_new(c(1, 9, 10), TRUE)
+# Nice!
+
+# Vectorizations and Functionals
+# iterating using the apply family, applies function to all elements of an object
+nums = 1:10
+sapply(X = nums, FUN = sqrt)
+# silly example bc sqrt is already vectorized
+sqrt(nums)
+# apply calculate_z to all cols of murder_numbers, we didn't vectorize it so it won't work
+# calculate_z(murder_numbers) Error! How to fix:
+z_total = calculate_z(murder_numbers$total)
+z_population = calculate_z(murder_numbers$population)
+z_rate = calculate_z(murder_numbers$rate)
+murders_z = data.frame(z_total, z_population, z_rate)
+head(murders_z, n = 3)
+# but if murder_numbers has a lot of cols, trouble
+# put it inside of a for loop
+murders_z = list()
+for(col in names(murder_numbers)) {
+  murders_z[[col]] = calculate_z(murder_numbers[[col]])
+}
+head(as.data.frame(murders_z))
+# but hard to read and write! SO simplify it w/ sapply
+murders_z = sapply(murder_numbers, calculate_z)
+head(as.data.frame(murders_z))
+# this is why for loops are discouraged in R-dont need them!
+# functional: function of functions, sapply is an example
+
+# Parallelization
+install.packages("future")
+install.packages("future.apply")
+install.packages("tictoc")
+library(future)
+library(future.apply)
+library(tictoc)
+plan(multisession)
+# make a deliberately slow function
+slow_square = function(x = 1) {
+  Sys.sleep(1/3) # just wait 1/3 of a second
+  return(x^2)
+}
+# We can speed this up by running iterations in parallel
+availableCores()
+# parallelize via future.appl
+tic()
+future_sapply(1:24, slow_square)
+toc()
+# to make it parallel there are 2 steps:
+# 1) Declare intent: plan(multisession)
+# 2) use future_sapply instead of sapply
+# future is useful bc simple and don;t need to know about hardware
+# pllztn is useful when code takes a long time and is easy to break into chunks
+# not useful for already fast code, takes overhead
+# chunks must be independent, can't have to communicate w/each other
+# ex: bootstrapping, simulation, iteration problems
+# Other functions for vectorization
+# lapply(): returns list instead vector, can always unlist
+# mapply(): multivariate version, vectorizes in 2+ dim
+# purrr: map() and map2() similar but interact better w/ Tidyverse
+# furrr: pllzd tidy-friendly vectorization, combine purrr and future
+
+# LECTURE 3: PRODUCTIVITY TOOLS
+# Yoooooooo we're gonna learn VERSION CONTROL
+#testing a change!
