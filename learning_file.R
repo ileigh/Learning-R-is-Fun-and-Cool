@@ -578,4 +578,33 @@ gdp_u
 library(lubridate)
 gdp_u |> mutate(date = ymd(date))
 
-# STOPPING FOR NOW 
+# CHALLENGE
+# create a table of avg arrival delay in minutes by day and carrier
+flights |>
+  group_by(carrier) |>
+  summarize(avg_late = mean(arr_delay, na.rm=T))
+#
+delay_long = flights |>
+  group_by(carrier, day) |>
+  summarize(avg_late = mean(arr_delay, na.rm=T))
+delay_wide = delay_long |>
+  pivot_wider(names_from = carrier, values_from = avg_late)
+head(delay_wide, 4)
+
+# Importing data with readr
+# download colleges into the c drive so it's in the same world as the R stuff 
+# working directory: current location in the file system 
+getwd() # full or absolute path, starts with C:/ on windows or / on Mac
+#Relative paths: defined relative to the full path of the working directory
+# example: C:/git/ecns-560/"
+# if file saves at C:/git/ecns-560/assignment-3/assignment-3.Rmd"
+# relative path is assignmane-3/assignment-3.Rmd
+# can use absolute or relative path, relative is easier b/c shorter
+
+# Set the working directory
+setwd("C:/Users/ileigh/Documents/GitHub/Learning-R-is-Fun-and-Cool")
+# Do not use setwd() in scripts because you want your code to be portable
+dat = read_csv("colleges.csv")
+view
+
+# Challenge
