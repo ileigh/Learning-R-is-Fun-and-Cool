@@ -578,12 +578,11 @@ gdp_u
 library(lubridate)
 gdp_u |> mutate(date = ymd(date))
 
-# CHALLENGE
 # create a table of avg arrival delay in minutes by day and carrier
 flights |>
   group_by(carrier) |>
   summarize(avg_late = mean(arr_delay, na.rm=T))
-#
+
 delay_long = flights |>
   group_by(carrier, day) |>
   summarize(avg_late = mean(arr_delay, na.rm=T))
