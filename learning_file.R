@@ -578,12 +578,11 @@ gdp_u
 library(lubridate)
 gdp_u |> mutate(date = ymd(date))
 
-# CHALLENGE
 # create a table of avg arrival delay in minutes by day and carrier
 flights |>
   group_by(carrier) |>
   summarize(avg_late = mean(arr_delay, na.rm=T))
-#
+
 delay_long = flights |>
   group_by(carrier, day) |>
   summarize(avg_late = mean(arr_delay, na.rm=T))
@@ -606,5 +605,17 @@ setwd("C:/Users/ileigh/Documents/GitHub/Learning-R-is-Fun-and-Cool")
 # Do not use setwd() in scripts because you want your code to be portable
 dat = read_csv("colleges.csv")
 view
-
+str(dat)
 # Challenge
+# which state has the least total reported covid-19 
+dat2 = dat |>
+  group_by(state) |>
+  summarize(tot_cases = sum(cases)) |>
+  arrange(tot_cases)
+dat2
+# other tips: csv files can be wonky, read_csv has options, look @ help file
+# can read files directly from the internet, avoid doing this
+# write_csv: outputs dataframe as a csv to my computer
+# readxl :: read_excel reads directly from Excel
+# googlesheets4 :: read_sheet reads directly from google sheets
+# haven :: read_dta reads directly from Stata!!!
