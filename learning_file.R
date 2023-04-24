@@ -619,3 +619,64 @@ dat2
 # readxl :: read_excel reads directly from Excel
 # googlesheets4 :: read_sheet reads directly from google sheets
 # haven :: read_dta reads directly from Stata!!!
+
+# start chapter 5
+flights_planes = inner_join(
+  flights,
+  planes |> rename(year_built =year),
+  by ="tailnum"
+  )
+flights_planes |> summarize(across(c(air_time, distance, seats), mean, na.rm=T))
+# but there is a better way to use the pipes
+inner_flights_planes = flights |>
+  inner_join(planes |> rename(year_built = year), by="tailnum")
+inner_flights_planes |>
+  summarize(across(c(air_time, distance, seats), mean, na.rm=T))
+# but the inner join is different from the left join
+left_flights_planes = flights |>
+  left_join(planes |> rename(year_built = year), by="tailnum")
+left_flights_planes |>
+  summarize(across(c(air_time, distance, seats), mean, na.rm=T))
+#check row numbers
+nrow(flights)
+nrow(inner_flights_planes)
+nrow(left_flights_planes)
+#inner drops some! ebven though good data
+summary(flights$tailnum)
+#check for missing
+flights |>
+  mutate(na_tailnum = is.na(tailnum)) |>
+  count(na_tailnum)
+# about 50,000 flights must have values of tailnum that aren't in planes
+flights_planes = flights |>
+  left_join(planes |> rename(year_built = year),
+            by="tailnum",
+            keep=TRUE
+  )
+# how many rows matched?
+flights_planes |> filter(tailnum.x == tailnum.y) |> nrow()
+# how many rows failed to match bc tailnum was missing in flights
+flights_planes |> filter(is.na(tailnum.x)) |> nrow()
+# how many rows failed to match bc tailnum was missing in flights
+flights_planes |> filter(is.na(tailnum.x)) |> nrow()
+# how many rows failed bc tailnum was not fund in planes
+flights_planes |> filter(!is.na(tailnum.x) & is.na(tailnum.y)) |> nrow()
+# why is the mean of seats unaffected?
+inner_flights_planes |>
+  mutate(na_seats = is.na(seats)) |>
+  count(na_seats)
+left_flights_planes |>
+  mutate(na_seats = is.na(seats)) |>
+  count(na_seats)
+# seats has missing values in the left joined, 
+# but the nonmissing are the same so when we took means we removed them with na.rm=T
+# advantage of R over stata:
+  # R holds multiple dataframes in memory at one (BH!!) 
+  # R hols multiple versions/stages
+  # R treats missing values in a safe/sensible way
+    # NA's propagate through calculations unless you specifically set na.rm=T
+    # in stata, mising values equal +infinity
+    # in Stata, drop if x > 1000 will drop all observations with missing values of x
+      # to avoid this, ALWAYS: drop if x>1000 & !missing(x) to all if conditions
+
+# Keys and Relational Data
