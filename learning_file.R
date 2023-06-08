@@ -680,3 +680,53 @@ left_flights_planes |>
       # to avoid this, ALWAYS: drop if x>1000 & !missing(x) to all if conditions
 
 # Keys and Relational Data
+  # Relational data: multiple tables of data that have relations to each other that you might join
+    #often discussed re: SQL databases, joins in general
+  # key: a variable or set of variables that uniquely identifies an observation
+  # primary key: uniquely identifies an observation in its own data frame
+    # planes$tailnum ia a primary key bc it uniquely identifies each plane in planes
+  # foreign key: uniquely identifies an observation in another dataframe
+    # flights$tailnum appears in flights where it matches each flight to a unique plane
+  # a key can be both primary AND foreign, ex: origin
+#the primary key is the first thing you need to know about a new data frame
+# once you know the primary key, verify it
+planes |>
+  count(tailnum) |>
+  filter(n>1)
+# you can write a unit test to make sure this is true before proceeding
+dups_planes = planes |>
+  count(tailnum) |>
+  filter(n > 1)
+stopifnot(nrow(dups_planes) == 0)
+
+dups_weather = weather |>
+  count(year, month, day, hour, origin) |>
+  filter( n > 1)
+stopifnot(nrow(dups_weather) == 0)
+
+# Surrogate keys 
+    # what is the primary key in flights? It is NOT date + carrier + flight or tail number bc not unique
+flights |>
+  count(year, month, day, carrier, flight) |>
+  filter(n > 1)
+# if a data frame lacks a primary key but is tidy, it's useful to add in a surrogate key
+flights2 = flights |>
+  arrange(year, month, day, carrier, flight, sched_dep_time) |>
+  mutate(id = row_number()) |>
+  relocate(id)
+flights2
+# a primary key and the corresponding foreign key in another data frame form a relation
+# in general, relations are 1-to-many (each flight has one plane, each plane has many flights)
+# sometimes will see 1-to-1, special case of 1-to-many
+# many-to-many but think of as two 1-many going in each direction (each airline flies to many airports, each airport hosts many airlines)
+# NEVER USE m:m IN STATA IT SHOULD BE ILLEGAL if tempted try joinby
+
+#join does not think about whether your key is unique, or what type of relation
+# it returns all possible combinations
+
+
+
+
+
+
+
